@@ -627,3 +627,201 @@ void loop() {
   // Short delay to yield CPU time.
   delay(1);
 }
+
+
+// #include <SPI.h>
+// #include <SparkFun_KX13X.h>     // Defines rawOutputData (used for data format)
+// #include <bluefruit.h>          // Adafruit Bluefruit BLE library
+// #include <Adafruit_TinyUSB.h>   // USB CDC for Serial
+// #include <Adafruit_SPIFlash.h>  // SPI Flash support
+// #include <PDM.h>                // Arduino PDM library (not used in dummy mode)
+
+// // Flash transport (for internal flash operations)
+// Adafruit_FlashTransport_QSPI flashTransport;
+
+// ////////////////////
+// // Pin Definitions:
+// ////////////////////
+// #define KX134_CS_PIN 1   // Not used in dummy mode
+// #define KX134_INT_PIN 2  // Not used in dummy mode
+
+// ////////////////////
+// // BLE Service/Characteristic UUIDs:
+// ////////////////////
+// #define ACCEL_SERVICE_UUID 0xFF00
+// #define ACCEL_CHAR_UUID    0xFF01
+
+// ////////////////////
+// // Global Objects:
+// ////////////////////
+// BLEService accelService(ACCEL_SERVICE_UUID);
+// BLECharacteristic accelChar(ACCEL_CHAR_UUID);
+
+// // Flag for dummy sensor data trigger
+// volatile bool fifoDataReady = false;
+
+// // Decimation counters – assume raw rate is 16 kHz; we use every 2nd sample for an effective 8 kHz.
+// static uint32_t accelDecimCount = 0;
+// static uint32_t pdmDecimCount   = 0;
+
+// // Aggregation settings:
+// // Aggregate 30 sample pairs per BLE notification.
+// // Each pair is 8 bytes: 6 bytes for dummy accelerometer + 2 bytes for dummy PDM.
+// const uint8_t SAMPLE_PAIRS_PER_PKT = 30;
+// const uint16_t PACKET_SIZE = SAMPLE_PAIRS_PER_PKT * 8; // 240 bytes
+
+// // Buffer for aggregated BLE notification
+// uint8_t aggPacket[PACKET_SIZE];
+
+// // Timing for simulation trigger
+// static unsigned long lastSimTime = 0;
+
+// // Dummy counters for simulated data
+// static uint32_t dummyAccelCounter = 0;
+// static uint32_t dummyPdmCounter   = 0;
+
+// ////////////////////
+// // Simulated Sensor ISR (dummy trigger)
+// ////////////////////
+// void onAccelDataReady() {
+//   fifoDataReady = true;
+// }
+
+// ////////////////////
+// // Helper Function: Generate one dummy accelerometer sample
+// // Format: X = dummyAccelCounter, Y = dummyAccelCounter+1, Z = dummyAccelCounter+2.
+// bool getDummyAccelSample(rawOutputData &sample) {
+//   sample.xData = (int16_t)(dummyAccelCounter & 0xFFFF);
+//   sample.yData = (int16_t)((dummyAccelCounter + 1) & 0xFFFF);
+//   sample.zData = (int16_t)((dummyAccelCounter + 2) & 0xFFFF);
+//   dummyAccelCounter++;
+  
+//   accelDecimCount++;
+//   if ((accelDecimCount % 2) == 0) {
+//     return true;
+//   }
+//   return false;
+// }
+
+// ////////////////////
+// // Helper Function: Generate one dummy PDM sample (16-bit)
+// bool getDummyPDMSample(int16_t &pdmSample) {
+//   dummyPdmCounter++;
+//   pdmDecimCount++;
+//   if ((pdmDecimCount % 2) == 0) {
+//     pdmSample = (int16_t)(dummyPdmCounter & 0xFFFF);
+//     return true;
+//   }
+//   return false;
+// }
+
+// ////////////////////
+// // BLE Connection Callbacks
+// ////////////////////
+// void onBLEConnect(uint16_t conn_hdl) {
+//   BLEConnection* conn = Bluefruit.Connection(conn_hdl);
+//   conn->requestPHY();
+//   conn->requestMtuExchange(247);
+//   conn->requestConnectionParameter(6, 8);  // 7.5ms interval
+// }
+
+// void onBLEDisconnect(uint16_t conn_hdl, uint8_t reason) {
+//   (void)conn_hdl;
+//   (void)reason;
+// }
+
+// ////////////////////
+// // Setup Function
+// ////////////////////
+// void setup() {
+//   Serial.begin(115200);
+//   while (!Serial) delay(10);
+
+//   NRF_POWER->DCDCEN = 1;
+//   flashTransport.begin();
+//   flashTransport.runCommand(0xB9);
+//   delayMicroseconds(5);
+//   flashTransport.end();
+
+//   // Skip real sensor initialization; we are using dummy data.
+
+//   // BLE Peripheral Setup
+//   Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
+//   Bluefruit.begin();
+//   Bluefruit.setTxPower(4);
+//   Bluefruit.setName("XiaoBLE-AccelStream");
+//   Bluefruit.Periph.setConnectCallback(onBLEConnect);
+//   Bluefruit.Periph.setDisconnectCallback(onBLEDisconnect);
+//   Bluefruit.Periph.setConnInterval(6, 12);
+
+//   accelService.begin();
+//   accelChar.setProperties(CHR_PROPS_NOTIFY | CHR_PROPS_READ);
+//   accelChar.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+//   accelChar.setMaxLen(244);
+//   accelChar.setFixedLen(0);
+//   accelChar.begin();
+
+//   Bluefruit.Advertising.clearData();
+//   Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+//   Bluefruit.Advertising.addService(accelService);
+//   Bluefruit.ScanResponse.addName();
+//   Bluefruit.Advertising.setInterval(32, 244);
+//   Bluefruit.Advertising.setFastTimeout(30);
+//   Bluefruit.Advertising.start(0);
+//   Serial.println("BLE advertising started.");
+
+//   // Since no real sensor is present, we don't initialize PDM hardware.
+//   Serial.println("Dummy mode: using simulated PDM data.");
+// }
+
+// ////////////////////
+// // Loop Function: Aggregate 30 sample pairs and send one BLE notification.
+// ////////////////////
+// void loop() {
+//   // Simulate sensor interrupt trigger if not set by hardware.
+//   unsigned long now = micros();
+//   if (now - lastSimTime >= 125) {  // Approximately 125 µs trigger for 8 kHz rate
+//     fifoDataReady = true;
+//     lastSimTime = now;
+//   }
+  
+//   static uint8_t samplePairCount = 0;  // Number of sample pairs aggregated so far
+//   uint16_t offset = samplePairCount * 8; // Each pair is 8 bytes
+
+//   rawOutputData dummyAccel;
+//   bool gotAccel = getDummyAccelSample(dummyAccel);
+  
+//   int16_t dummyPdm;
+//   bool gotPDM = getDummyPDMSample(dummyPdm);
+  
+//   if (gotAccel && gotPDM) {
+//     // Pack dummy accelerometer sample (6 bytes)
+//     aggPacket[offset++] = (uint8_t)(dummyAccel.xData & 0xFF);
+//     aggPacket[offset++] = (uint8_t)((dummyAccel.xData >> 8) & 0xFF);
+//     aggPacket[offset++] = (uint8_t)(dummyAccel.yData & 0xFF);
+//     aggPacket[offset++] = (uint8_t)((dummyAccel.yData >> 8) & 0xFF);
+//     aggPacket[offset++] = (uint8_t)(dummyAccel.zData & 0xFF);
+//     aggPacket[offset++] = (uint8_t)((dummyAccel.zData >> 8) & 0xFF);
+//     // Pack dummy PDM sample (2 bytes)
+//     aggPacket[offset++] = (uint8_t)(dummyPdm & 0xFF);
+//     aggPacket[offset++] = (uint8_t)((dummyPdm >> 8) & 0xFF);
+    
+//     samplePairCount++;
+    
+//     // When we have 30 sample pairs, send the aggregated packet via BLE.
+//     if (samplePairCount >= SAMPLE_PAIRS_PER_PKT) {
+//       bool sent = accelChar.notify(aggPacket, PACKET_SIZE);
+//       if (!sent) {
+//         Serial.println("BLE notify buffer full! Data dropped.");
+//       } else {
+//         Serial.print("Sent packet with ");
+//         Serial.print(SAMPLE_PAIRS_PER_PKT);
+//         Serial.println(" sample pairs.");
+//       }
+//       samplePairCount = 0;  // Reset for next packet.
+//     }
+//   }
+  
+//   // No need to clear interrupt latch since we're simulating.
+//   delay(1);
+// }
