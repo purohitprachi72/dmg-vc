@@ -35,7 +35,7 @@ static uint32_t accelDecimCount = 0; // For accelerometer decimation
 static uint32_t pdmDecimCount   = 0; // For PDM decimation
 
 // Aggregation settings:
-// We'll aggregate 30 sample pairs per BLE notification.
+// We'll aggregate 30 sample pairs per BLE notification. ??
 // Each sample pair is 8 bytes: 6 bytes from accel and 2 bytes from PDM.
 const uint8_t SAMPLE_PAIRS_PER_PKT = 30;
 const uint16_t PACKET_SIZE = SAMPLE_PAIRS_PER_PKT * 8; // 240 bytes
